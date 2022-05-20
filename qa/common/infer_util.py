@@ -105,6 +105,7 @@ def infer_exact(tester,
                 use_http=True,
                 use_grpc=True,
                 use_http_json_tensors=True,
+                use_data_to_file=True,
                 skip_request_id_check=False,
                 use_streaming=True,
                 correlation_id=0,
@@ -113,13 +114,18 @@ def infer_exact(tester,
                 use_system_shared_memory=False,
                 use_cuda_shared_memory=False,
                 priority=0,
-                timeout_us=0):
+                timeout_us=0,
+                data_filename=""):
     # Lazy shm imports...
     if use_system_shared_memory or use_cuda_shared_memory:
         import tritonclient.utils.shared_memory as shm
         import tritonclient.utils.cuda_shared_memory as cudashm
+    if use_data_to_file:
+        import json
 
-    tester.assertTrue(use_http or use_grpc or use_streaming)
+    tester.assertTrue(use_http or use_grpc or use_streaming or use_data_to_file)
+    data_to_file_memory_check = False if use_data_to_file and (use_system_shared_memory or use_cuda_shared_memory) else True
+    tester.assertTrue(data_to_file_memory_check)
     # configs [ url, protocol, async stream, binary data ]
     configs = []
     if use_http:
@@ -225,7 +231,7 @@ def infer_exact(tester,
                                                            verbose=True)
         metadata = metadata_client.get_model_metadata(model_name)
         platform = metadata["platform"]
-    else:
+    elif configs[0][1] == "grpc":
         metadata_client = grpcclient.InferenceServerClient(configs[0][0],
                                                            verbose=True)
         metadata = metadata_client.get_model_metadata(model_name)
@@ -287,6 +293,26 @@ def infer_exact(tester,
         model_version = str(model_version)
     else:
         model_version = ""
+
+
+    if (use_data_to_file):
+        val_json = {
+            INPUT0: [{
+                INPUT0: input0_array.flatten().tolist()
+            }],
+            INPUT1: [{
+                INPUT1: input1_array.flatten().tolist()
+            }],
+            OUTPUT0: [{
+                OUTPUT0: output0_array.flatten().tolist()
+            }],
+            OUTPUT1: [{
+                OUTPUT1: output1_array.flatten().tolist()
+            }],
+        }
+        with open(data_filename, "w") as val_file:
+            val_file.write(json.dumps(val_json))
+        return results
 
     # Run inference and check results for each config
     for config in configs:
