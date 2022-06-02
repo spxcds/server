@@ -65,17 +65,11 @@ class InferTest(tu.TestResultCollector):
                                 input_dtype,
                                 output0_dtype,
                                 output1_dtype,
-                                output0_raw=True,
-                                output1_raw=True,
+                                use_data_to_file,
+                                data_filename_prefix,
                                 model_version=None,
                                 swap=False,
-                                outputs=("OUTPUT0", "OUTPUT1"),
-                                use_http=USE_HTTP,
-                                use_grpc=USE_GRPC,
-                                use_http_json_tensors=True,
-                                skip_request_id_check=True,
-                                use_streaming=True,
-                                correlation_id=0):
+                                outputs=("OUTPUT0", "OUTPUT1")):
             for bs in (1, batch_size):
                 # model that does not support batching
                 if bs == 1:
@@ -87,19 +81,11 @@ class InferTest(tu.TestResultCollector):
                         input_dtype,
                         output0_dtype,
                         output1_dtype,
-                        output0_raw=output0_raw,
-                        output1_raw=output1_raw,
+                        use_data_to_file=use_data_to_file,
+                        data_filename=data_filename_prefix+"_v"+model_version+"_nobatch"+"_infer_data.json",
                         model_version=model_version,
                         swap=swap,
-                        outputs=outputs,
-                        use_http=use_http,
-                        use_grpc=use_grpc,
-                        use_http_json_tensors=use_http_json_tensors,
-                        skip_request_id_check=skip_request_id_check,
-                        use_streaming=use_streaming,
-                        correlation_id=correlation_id,
-                        use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                        use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                        outputs=outputs)
 
                 # model that supports batching.
                 iu.infer_exact(
@@ -109,19 +95,11 @@ class InferTest(tu.TestResultCollector):
                     input_dtype,
                     output0_dtype,
                     output1_dtype,
-                    output0_raw=output0_raw,
-                    output1_raw=output1_raw,
+                    use_data_to_file=use_data_to_file,
+                    data_filename=data_filename_prefix+"_v"+model_version+"_b"+bs+"_infer_data.json",
                     model_version=model_version,
                     swap=swap,
-                    outputs=outputs,
-                    use_http=use_http,
-                    use_grpc=use_grpc,
-                    use_http_json_tensors=use_http_json_tensors,
-                    skip_request_id_check=skip_request_id_check,
-                    use_streaming=use_streaming,
-                    correlation_id=correlation_id,
-                    use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                    use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                    outputs=outputs)
 
         input_size = 16
 
@@ -147,8 +125,8 @@ class InferTest(tu.TestResultCollector):
                                             input_dtype,
                                             output0_dtype,
                                             output1_dtype,
-                                            output0_raw=output0_raw,
-                                            output1_raw=output1_raw,
+                                            use_data_to_file=True,
+                                            data_filename_prefix=pf,
                                             swap=swap)
 
         if not CPU_ONLY and tu.validate_for_trt_model(
@@ -538,12 +516,9 @@ class InferTest(tu.TestResultCollector):
                     np.int8,
                     np.int8,
                     np.int8,
-                    model_version=1,
-                    swap=False,
-                    use_http=USE_HTTP,
-                    use_grpc=USE_GRPC,
-                    use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                    use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                    use_data_to_file=True,
+                    data_filename=platform+"v1_infer_data.json",
+                    model_version=1)
             except InferenceServerException as ex:
                 self.assertTrue(
                     ex.message().startswith("Request for unknown model"))
@@ -557,12 +532,10 @@ class InferTest(tu.TestResultCollector):
                     np.int8,
                     np.int8,
                     np.int8,
+                    use_data_to_file=True,
+                    data_filename=platform + "v2_infer_data.json",
                     model_version=2,
-                    swap=True,
-                    use_http=USE_HTTP,
-                    use_grpc=USE_GRPC,
-                    use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                    use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                    swap=True)
             except InferenceServerException as ex:
                 self.assertTrue(
                     ex.message().startswith("Request for unknown model"))
@@ -574,12 +547,10 @@ class InferTest(tu.TestResultCollector):
                            np.int8,
                            np.int8,
                            np.int8,
+                           use_data_to_file=True,
+                           data_filename= platform+"v3_infer_data.json",
                            model_version=3,
-                           swap=True,
-                           use_http=USE_HTTP,
-                           use_grpc=USE_GRPC,
-                           use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                           use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                           swap=True)
 
     def test_raw_version_latest_2(self):
         input_size = 16
@@ -599,12 +570,10 @@ class InferTest(tu.TestResultCollector):
                     np.int16,
                     np.int16,
                     np.int16,
+                    use_data_to_file=True,
+                    data_filename= platform+"v1_infer_data.json",
                     model_version=1,
-                    swap=False,
-                    use_http=USE_HTTP,
-                    use_grpc=USE_GRPC,
-                    use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                    use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                    swap=False)
             except InferenceServerException as ex:
                 self.assertTrue(
                     ex.message().startswith("Request for unknown model"))
@@ -616,12 +585,10 @@ class InferTest(tu.TestResultCollector):
                            np.int16,
                            np.int16,
                            np.int16,
+                           use_data_to_file=True,
+                           data_filename= platform+"v2_infer_data.json",
                            model_version=2,
-                           swap=True,
-                           use_http=USE_HTTP,
-                           use_grpc=USE_GRPC,
-                           use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                           use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                           swap=True)
             iu.infer_exact(self,
                            platform,
                            tensor_shape,
@@ -629,12 +596,10 @@ class InferTest(tu.TestResultCollector):
                            np.int16,
                            np.int16,
                            np.int16,
+                           use_data_to_file=True,
+                           data_filename= platform+"v3_infer_data.json",
                            model_version=3,
-                           swap=True,
-                           use_http=USE_HTTP,
-                           use_grpc=USE_GRPC,
-                           use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                           use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                           swap=True)
 
     def test_raw_version_all(self):
         input_size = 16
@@ -652,12 +617,10 @@ class InferTest(tu.TestResultCollector):
                            np.int32,
                            np.int32,
                            np.int32,
+                           use_data_to_file=True,
+                           data_filename= platform+"v1_infer_data.json",
                            model_version=1,
-                           swap=False,
-                           use_http=USE_HTTP,
-                           use_grpc=USE_GRPC,
-                           use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                           use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                           swap=False)
             iu.infer_exact(self,
                            platform,
                            tensor_shape,
@@ -665,12 +628,10 @@ class InferTest(tu.TestResultCollector):
                            np.int32,
                            np.int32,
                            np.int32,
+                           use_data_to_file=True,
+                           data_filename= platform+"v2_infer_data.json",
                            model_version=2,
-                           swap=True,
-                           use_http=USE_HTTP,
-                           use_grpc=USE_GRPC,
-                           use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                           use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                           swap=True)
             iu.infer_exact(self,
                            platform,
                            tensor_shape,
@@ -678,12 +639,10 @@ class InferTest(tu.TestResultCollector):
                            np.int32,
                            np.int32,
                            np.int32,
+                           use_data_to_file=True,
+                           data_filename= platform+"v3_infer_data.json",
                            model_version=3,
-                           swap=True,
-                           use_http=USE_HTTP,
-                           use_grpc=USE_GRPC,
-                           use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                           use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                           swap=True)
 
     def test_raw_version_specific_1(self):
         input_size = 16
@@ -701,12 +660,10 @@ class InferTest(tu.TestResultCollector):
                            np.float16,
                            np.float16,
                            np.float16,
+                           use_data_to_file=True,
+                           data_filename= platform+"v1_infer_data.json",
                            model_version=1,
-                           swap=False,
-                           use_http=USE_HTTP,
-                           use_grpc=USE_GRPC,
-                           use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                           use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                           swap=False)
 
             try:
                 iu.infer_exact(
@@ -717,12 +674,10 @@ class InferTest(tu.TestResultCollector):
                     np.float16,
                     np.float16,
                     np.float16,
+                    use_data_to_file=True,
+                    data_filename= platform+"v2_infer_data.json",
                     model_version=2,
-                    swap=True,
-                    use_http=USE_HTTP,
-                    use_grpc=USE_GRPC,
-                    use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                    use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                    swap=True)
             except InferenceServerException as ex:
                 self.assertTrue(
                     ex.message().startswith("Request for unknown model"))
@@ -736,12 +691,10 @@ class InferTest(tu.TestResultCollector):
                     np.float16,
                     np.float16,
                     np.float16,
+                    use_data_to_file=True,
+                    data_filename= platform+"v3_infer_data.json",
                     model_version=3,
-                    swap=True,
-                    use_http=USE_HTTP,
-                    use_grpc=USE_GRPC,
-                    use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                    use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                    swap=True)
             except InferenceServerException as ex:
                 self.assertTrue(
                     ex.message().startswith("Request for unknown model"))
@@ -764,12 +717,10 @@ class InferTest(tu.TestResultCollector):
                            np.float32,
                            np.float32,
                            np.float32,
+                           use_data_to_file=True,
+                           data_filename= platform+"v1_infer_data.json",
                            model_version=1,
-                           swap=False,
-                           use_http=USE_HTTP,
-                           use_grpc=USE_GRPC,
-                           use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                           use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                           swap=False)
 
             try:
                 iu.infer_exact(
@@ -780,12 +731,10 @@ class InferTest(tu.TestResultCollector):
                     np.float32,
                     np.float32,
                     np.float32,
+                    use_data_to_file=True,
+                    data_filename= platform+"v2_infer_data.json",
                     model_version=2,
-                    swap=True,
-                    use_http=USE_HTTP,
-                    use_grpc=USE_GRPC,
-                    use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                    use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                    swap=True)
             except InferenceServerException as ex:
                 self.assertTrue(
                     ex.message().startswith("Request for unknown model"))
@@ -797,12 +746,10 @@ class InferTest(tu.TestResultCollector):
                            np.float32,
                            np.float32,
                            np.float32,
+                           use_data_to_file=True,
+                           data_filename= platform+"v3_infer_data.json",
                            model_version=3,
-                           swap=True,
-                           use_http=USE_HTTP,
-                           use_grpc=USE_GRPC,
-                           use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                           use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                           swap=True)
 
     if ENSEMBLES:
         if all(x in BACKENDS for x in ['graphdef', 'savedmodel']):
@@ -819,10 +766,8 @@ class InferTest(tu.TestResultCollector):
                         np.float32,
                         np.float32,
                         np.float32,
-                        use_http=USE_HTTP,
-                        use_grpc=USE_GRPC,
-                        use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                        use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                        use_data_to_file=True,
+                        data_filename= "b"+bs+"_infer_data.json")
 
         if "graphdef" in BACKENDS:
 
@@ -835,10 +780,8 @@ class InferTest(tu.TestResultCollector):
                         np.int32,
                         np.float32,
                         np.float32,
-                        use_http=USE_HTTP,
-                        use_grpc=USE_GRPC,
-                        use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                        use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                        use_data_to_file=True,
+                        data_filename= "b"+bs+"_infer_data.json")
 
         if all(x in BACKENDS for x in ['graphdef', 'savedmodel']):
 
@@ -851,10 +794,8 @@ class InferTest(tu.TestResultCollector):
                         np.int32,
                         np.float32,
                         np.float32,
-                        use_http=USE_HTTP,
-                        use_grpc=USE_GRPC,
-                        use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                        use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                        use_data_to_file=True,
+                        data_filename= "b"+bs+"_infer_data.json"Y)
 
         if all(x in BACKENDS for x in [
                 'graphdef',
@@ -871,10 +812,8 @@ class InferTest(tu.TestResultCollector):
                             np.float32,
                             np.float32,
                             np.float32,
-                            use_http=USE_HTTP,
-                            use_grpc=USE_GRPC,
-                            use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                            use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                            use_data_to_file=True,
+                        data_filename= name+"_b"+bs+"_infer_data.json")
                     iu.infer_exact(
                         self,
                         name + "_nobatch", (8, 16),
@@ -882,10 +821,8 @@ class InferTest(tu.TestResultCollector):
                         np.float32,
                         np.float32,
                         np.float32,
-                        use_http=USE_HTTP,
-                        use_grpc=USE_GRPC,
-                        use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                        use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                        use_data_to_file=True,
+                        data_filename= name+"_nobatch_infer_data.json")
 
                 # batch -> nobatch -> batch
                 for bs in (1, 8):
@@ -896,10 +833,8 @@ class InferTest(tu.TestResultCollector):
                         np.float32,
                         np.float32,
                         np.float32,
-                        use_http=USE_HTTP,
-                        use_grpc=USE_GRPC,
-                        use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                        use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                        use_data_to_file=True,
+                        data_filename= "mix_nobatch_batch_infer_data.json"Y)
 
         if not (TEST_SYSTEM_SHARED_MEMORY or TEST_CUDA_SHARED_MEMORY):
 
@@ -914,12 +849,8 @@ class InferTest(tu.TestResultCollector):
                             np.float32,
                             np.float32,
                             np.float32,
-                            output0_raw=False,
-                            output1_raw=False,
-                            use_http=USE_HTTP,
-                            use_grpc=USE_GRPC,
-                            use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                            use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                            use_data_to_file=True,
+                            data_filename= "mix_platform_b"+bs+"_infer_data.json")
 
                 if all(x in BACKENDS for x in ['graphdef', 'savedmodel']):
                     # Label from the actual model will be passed along the nested ensemble
@@ -931,12 +862,8 @@ class InferTest(tu.TestResultCollector):
                             np.int32,
                             np.float32,
                             np.float32,
-                            output0_raw=False,
-                            output1_raw=False,
-                            use_http=USE_HTTP,
-                            use_grpc=USE_GRPC,
-                            use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                            use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                            use_data_to_file=True,
+                            data_filename= "mix_ensemble_b"+bs+"_infer_data.json")
 
                 if "graphdef" in BACKENDS:
                     # If label file is provided, it will use the provided label file directly
@@ -948,12 +875,8 @@ class InferTest(tu.TestResultCollector):
                             np.int32,
                             np.float32,
                             np.float32,
-                            output0_raw=False,
-                            output1_raw=False,
-                            use_http=USE_HTTP,
-                            use_grpc=USE_GRPC,
-                            use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                            use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                            use_data_to_file=True,
+                            data_filename= "wrong_label_infer_data.json")
                     except AssertionError:
                         # Sanity check that infer_exact failed since this ensemble is provided
                         # with unexpected labels
@@ -968,12 +891,8 @@ class InferTest(tu.TestResultCollector):
                             np.int32,
                             np.float32,
                             np.float32,
-                            output0_raw=False,
-                            output1_raw=False,
-                            use_http=USE_HTTP,
-                            use_grpc=USE_GRPC,
-                            use_system_shared_memory=TEST_SYSTEM_SHARED_MEMORY,
-                            use_cuda_shared_memory=TEST_CUDA_SHARED_MEMORY)
+                            use_data_to_file=True,
+                            data_filename= "label_override_b"+bs+"_infer_data.json")
 
 
 if __name__ == '__main__':

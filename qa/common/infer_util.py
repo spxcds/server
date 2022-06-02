@@ -88,6 +88,20 @@ def completion_callback(user_data, result, error):
     # passing error raise and handling out
     user_data._completed_requests.put((result, error))
 
+def infer_exact(tester,
+                pf,
+                tensor_shape,
+                batch_size,
+                input_dtype,
+                output0_dtype,
+                output1_dtype,
+                outputs,
+                use_data_to_file,
+                data_filename,
+                model_version=None,
+                swap=False,
+                timeout_us=0):
+    return infer_exact(tester, pf, tensor_shape, batch_size, input_dtype, output0_dtype,output1_dtype, output0_raw=True, output1_raw=True, model_version=model_version, swap=swap, outputs=outputs, use_http=False, use_grpc=False, use_http_json_tensors=False, skip_request_id_check=True, use_streaming=False, correlation_id=0, shm_region_names=None, precreated_shm_regions=None, use_system_shared_memory=False, use_cuda_shared_memory=False, priority=0, timeout_us=timeout_us, use_data_to_file=use_data_to_file, data_filename=data_filename) 
 
 # Perform inference using an "addsum" type verification backend.
 def infer_exact(tester,
@@ -105,7 +119,6 @@ def infer_exact(tester,
                 use_http=True,
                 use_grpc=True,
                 use_http_json_tensors=True,
-                use_data_to_file=True,
                 skip_request_id_check=False,
                 use_streaming=True,
                 correlation_id=0,
@@ -115,6 +128,7 @@ def infer_exact(tester,
                 use_cuda_shared_memory=False,
                 priority=0,
                 timeout_us=0,
+                use_data_to_file=True,
                 data_filename=""):
     # Lazy shm imports...
     if use_system_shared_memory or use_cuda_shared_memory:
@@ -312,6 +326,7 @@ def infer_exact(tester,
         }
         with open(data_filename, "w") as val_file:
             val_file.write(json.dumps(val_json))
+        print("here????")
         return results
 
     # Run inference and check results for each config

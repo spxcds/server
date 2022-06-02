@@ -25,6 +25,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# Todo: enable dlpack/jetson tests
+
 REPO_VERSION=${NVIDIA_TRITON_SERVER_VERSION}
 if [ "$#" -ge 1 ]; then
     REPO_VERSION=$1
@@ -41,49 +43,40 @@ DATADIR=/data/inferenceserver/${REPO_VERSION}
 
 # Create local model repository
 mkdir -p models/
-cp -r $DATADIR/perf_model_store/resnet50* models/
 
 # Set up test files based on installation instructions
 # https://github.com/bytedeco/javacpp-presets/blob/master/tritonserver/README.md
-set +e
-rm -r javacpp-presets
-git clone https://github.com/bytedeco/javacpp-presets.git
-cd javacpp-presets
-mvn clean install --projects .,tritonserver
-mvn clean install -f platform --projects ../tritonserver/platform -Djavacpp.platform.host
-cd ..
-set -e
+# set +e
+# rm -r javacpp-presets
+# git clone https://github.com/bytedeco/javacpp-presets.git
+# cd javacpp-presets
+# mvn clean install --projects .,tritonserver
+# mvn clean install -f platform --projects ../tritonserver/platform -Djavacpp.platform.host
+# cd ..
+# set -e
 
-CLIENT_LOG="client.log"
-MODEL_REPO=`pwd`/models
-SAMPLES_REPO=`pwd`/javacpp-presets/tritonserver/samples
-BASE_COMMAND="mvn clean compile -f $SAMPLES_REPO exec:java -Djavacpp.platform=linux-x86_64"
-source ../common/util.sh
+# CLIENT_LOG="client.log"
+# MODEL_REPO=`pwd`/models
+# SAMPLES_REPO=`pwd`/javacpp-presets/tritonserver/samples
+# BASE_COMMAND="mvn clean compile -f $SAMPLES_REPO exec:java -Djavacpp.platform=linux-x86_64"
+# source ../common/util.sh
+
+# # Modify the pom to not force include any cuda dependencies
+# sed -i '/<dependency>/ {
+#     :start
+#     N
+#     /<\/dependency>$/!b start
+#     /<artifactId>cuda-platform<\/artifactId>/ {d}
+#     /<artifactId>tensorrt-platform<\/artifactId>/ {d}
+# }' $SAMPLES_REPO/pom.xml
 
 cp Simple.java $SAMPLES_REPO
-# Modify the pom to not force include any cuda dependencies
-sed -i '/<dependency>/ {
-    :start
-    N
-    /<\/dependency>$/!b start
-    /<artifactId>cuda-platform<\/artifactId>/ {d}
-    /<artifactId>tensorrt-platform<\/artifactId>/ {d}
-}' $SAMPLES_REPO/pom.xml
-
-rm -f *.log
-RET=0
 
 TEST_RESULT_FILE='test_results.txt'
 CLIENT_LOG_BASE="./client"
 EXPECTED_NUM_TESTS=${EXPECTED_NUM_TESTS:="29"}
 INFER_TEST=infer_test.py
 SERVER_TIMEOUT=360
-
-# Run with default settings
-$BASE_COMMAND -Dexec.args="-r $MODEL_REPO" >>$CLIENT_LOG 2>&1
-if [ $? -ne 0 ]; then
-    RET=1
-fi
 
 TEST_SYSTEM_SHARED_MEMORY="0"
 TF_VERSION=${TF_VERSION:=1}
@@ -97,14 +90,6 @@ DATADIR=${DATADIR:="/data/inferenceserver/${REPO_VERSION}"}
 TRITON_DIR=${TRITON_DIR:="/opt/tritonserver"}
 SERVER=${TRITON_DIR}/bin/tritonserver
 BACKEND_DIR=${TRITON_DIR}/backends
-##############################
-
-
-
-
-
-
-
 
 # Allow more time to exit. Ensemble brings in too many models
 SERVER_ARGS_EXTRA="--exit-timeout-secs=${SERVER_TIMEOUT} --backend-directory=${BACKEND_DIR} --backend-config=tensorflow,version=${TF_VERSION} --backend-config=python,stub-timeout-seconds=120 --backend-config=python,shm-default-byte-size=${DEFAULT_SHM_SIZE_BYTES}"
@@ -124,18 +109,9 @@ export BACKENDS
 ENSEMBLES=${ENSEMBLES:="1"}
 export ENSEMBLES
 
-if [[ $BACKENDS == *"python_dlpack"* ]]; then
-    if [ "$TEST_JETSON" == "0" ]; then
-        if [[ "aarch64" != $(uname -m) ]] ; then
-            pip3 install torch==1.9.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
-        else
-            pip3 install torch==1.9.0 -f https://download.pytorch.org/whl/torch_stable.html
-        fi
-    fi
-fi
+# Prepare models
 
-
-for TARGET in cpu ; do
+for TARGET in cpu gpu ; do
     if [ "$TRITON_SERVER_CPU_ONLY" == "1" ]; then
         if [ "$TARGET" == "gpu" ]; then
             echo -e "Skip GPU testing on CPU-only device"
@@ -270,20 +246,32 @@ for TARGET in cpu ; do
 
     set +e
 
+    run_server
     python3 $INFER_TEST >$CLIENT_LOG 2>&1
     if [ $? -ne 0 ]; then
         cat $CLIENT_LOG
         RET=1
-    else
-        check_test_results $TEST_RESULT_FILE $EXPECTED_NUM_TESTS
-        if [ $? -ne 0 ]; then
-            cat $CLIENT_LOG
-            echo -e "\n***\n*** Test Result Verification Failed\n***"
-            RET=1
-        fi
+    # else
+    #     check_test_results $TEST_RESULT_FILE $EXPECTED_NUM_TESTS
+    #     if [ $? -ne 0 ]; then
+    #         cat $CLIENT_LOG
+    #         echo -e "\n***\n*** Test Result Verification Failed\n***"
+    #         RET=1
+    #     fi
     fi
     set -e
+    kill_server
 done
+
+# rm -f *.log
+# RET=0
+# Run with default settings
+# $BASE_COMMAND -Dexec.args="-r $MODEL_REPO" >>$CLIENT_LOG 2>&1
+# if [ $? -ne 0 ]; then
+#     RET=1
+# fi
+
+
 
 if [ $RET -eq 0 ]; then
   echo -e "\n***\n*** Test Passed\n***"

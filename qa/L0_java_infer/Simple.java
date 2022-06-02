@@ -24,6 +24,188 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 public class Infer {
+    
+    static TRITONSERVER_Error
+    ParseModelMetadata(
+        JsonObject model_metadata, String datatype, String framework_type)
+    {
+      String seen_data_type = null;
+      for (JsonElement input_element : model_metadata.get("inputs").getAsJsonArray()) {
+        JsonObject input = input_element.getAsJsonObject();
+        if (!input.get("datatype").getAsString().equals("INT32") &&
+            !input.get("datatype").getAsString().equals("FP32")) {
+          return TRITONSERVER_ErrorNew(
+              TRITONSERVER_ERROR_UNSUPPORTED,
+              "simple lib example only supports model with data type INT32 or " +
+              "FP32");
+        }
+        if (seen_data_type == null) {
+          seen_data_type = input.get("datatype").getAsString();
+        } else if (!seen_data_type.equals(input.get("datatype").getAsString())) {
+          return TRITONSERVER_ErrorNew(
+              TRITONSERVER_ERROR_INVALID_ARG,
+              "the inputs and outputs of 'simple' model must have the data type");
+        }
+      }
+      for (JsonElement output_element : model_metadata.get("outputs").getAsJsonArray()) {
+        JsonObject output = output_element.getAsJsonObject();
+        if (!output.get("datatype").getAsString().equals("INT32") &&
+            !output.get("datatype").getAsString().equals("FP32")) {
+          return TRITONSERVER_ErrorNew(
+              TRITONSERVER_ERROR_UNSUPPORTED,
+              "simple lib example only supports model with data type INT32 or " +
+              "FP32");
+        } else if (!seen_data_type.equals(output.get("datatype").getAsString())) {
+          return TRITONSERVER_ErrorNew(
+              TRITONSERVER_ERROR_INVALID_ARG,
+              "the inputs and outputs of 'simple' model must have the data type");
+        }
+      }
+
+      is_int[0] = seen_data_type.equals("INT32");
+      is_torch_model[0] =
+          model_metadata.get("platform").getAsString().equals("pytorch_libtorch");
+      return null;
+    }
+    
+    
+    
+    
+    static class TRITONSERVER_ServerDeleter extends TRITONSERVER_Server {
+      public TRITONSERVER_ServerDeleter(TRITONSERVER_Server p) {
+        super(p);
+        deallocator(new DeleteDeallocator(this)); 
+        }
+      protected static class DeleteDeallocator extends TRITONSERVER_Server implements Deallocator {
+        DeleteDeallocator(Pointer p) { 
+          super(p); 
+          } @Override public void deallocate() { TRITONSERVER_ServerDelete(this); }
+      }
+    }
+
+
+
+      static class ResponseAlloc extends TRITONSERVER_ResponseAllocatorAllocFn_t {
+        @Override public TRITONSERVER_Error call (
+            TRITONSERVER_ResponseAllocator allocator, String tensor_name,
+            long byte_size, int preferred_memory_type,
+            long preferred_memory_type_id, Pointer userp, PointerPointer buffer,
+            PointerPointer buffer_userp, IntPointer actual_memory_type,
+            LongPointer actual_memory_type_id)
+        {
+          // Initially attempt to make the actual memory type and id that we
+          // allocate be the same as preferred memory type
+          actual_memory_type.put(0, preferred_memory_type);
+          actual_memory_type_id.put(0, preferred_memory_type_id);
+
+          // If 'byte_size' is zero just return 'buffer' == nullptr, we don't
+          // need to do any other book-keeping.
+          if (byte_size == 0) {
+            buffer.put(0, null);
+            buffer_userp.put(0, null);
+          } else {
+            Pointer allocated_ptr = new Pointer();
+            if (enforce_memory_type) {
+              actual_memory_type.put(0, requested_memory_type);
+            }
+
+            actual_memory_type.put(0, TRITONSERVER_MEMORY_CPU);
+            allocated_ptr = Pointer.malloc(byte_size);
+
+            // Pass the tensor name with buffer_userp so we can show it when
+            // releasing the buffer.
+            if (!allocated_ptr.isNull()) {
+              buffer.put(0, allocated_ptr);
+              buffer_userp.put(0, Loader.newGlobalRef(tensor_name));
+            }
+          }
+
+          return null;  // Success
+        }
+    }
+    
+        static class ResponseRelease extends TRITONSERVER_ResponseAllocatorReleaseFn_t {
+        @Override public TRITONSERVER_Error call (
+            TRITONSERVER_ResponseAllocator allocator, Pointer buffer, Pointer buffer_userp,
+            long byte_size, int memory_type, long memory_type_id)
+        {
+          String name = null;
+          if (buffer_userp != null) {
+            name = (String)Loader.accessGlobalRef(buffer_userp);
+          } else {
+            name = "<unknown>";
+          }
+          Pointer.free(buffer);
+          Loader.deleteGlobalRef(buffer_userp);
+
+          return null;  // Success
+        }
+    }
+
+        static class InferRequestComplete extends TRITONSERVER_InferenceRequestReleaseFn_t {
+        @Override public void call (
+            TRITONSERVER_InferenceRequest request, int flags, Pointer userp)
+        {
+          // We reuse the request so we don't delete it here.
+        }
+    }
+
+    static class InferResponseComplete extends TRITONSERVER_InferenceResponseCompleteFn_t {
+        @Override public void call (
+            TRITONSERVER_InferenceResponse response, int flags, Pointer userp)
+        {
+          if (response != null) {
+            // Send 'response' to the future.
+            futures.get(userp).complete(response);
+          }
+        }
+    }
+
+    static ConcurrentHashMap<Pointer, CompletableFuture<TRITONSERVER_InferenceResponse>> futures = new ConcurrentHashMap<>();
+    static ResponseAlloc responseAlloc = new ResponseAlloc();
+    static ResponseRelease responseRelease = new ResponseRelease();
+    static InferRequestComplete inferRequestComplete = new InferRequestComplete();
+    static InferResponseComplete inferResponseComplete = new InferResponseComplete();
+
+    static void GenerateInputData(
+        IntPointer[] input0_data, IntPointer[] input1_data) {
+      input0_data[0] = new IntPointer(16);
+      input1_data[0] = new IntPointer(16);
+      for (int i = 0; i < 16; ++i) {
+        input0_data[0].put(i, i);
+        input1_data[0].put(i, 1);
+      }
+    }
+
+    static void GenerateInputData(
+        FloatPointer[] input0_data, FloatPointer[] input1_data)
+    {
+      input0_data[0] = new FloatPointer(16);
+      input1_data[0] = new FloatPointer(16);
+      for (int i = 0; i < 16; ++i) {
+        input0_data[0].put(i, i);
+        input1_data[0].put(i, 1);
+      }
+    }
+
+    static void Usage(String msg) {
+      if (msg != null) {
+        System.err.println(msg);
+      }
+
+      System.err.println("Usage: java " + Simple.class.getSimpleName() + " [options]");
+      System.err.println("\t-i Set number of iterations");
+      System.err.println("\t-m <\"system\"|\"pinned\"|gpu>"
+                       + " Enforce the memory type for input and output tensors."
+                       + " If not specified, inputs will be in system memory and outputs"
+                       + " will be based on the model's preferred type.");
+      System.err.println("\t-v Enable verbose logging");
+      System.err.println("\t-r [model repository absolute path]");
+
+      System.exit(1);
+    }
+
+
     public static void
     main(String[] args) throws Exception
     {
@@ -222,16 +404,6 @@ public class Infer {
             "parsing model metadata");
       }
 
-      Runnable runnable =
-        () -> { 
-          if(ValidateMemoryGrowth(.05f)){
-            System.out.println("Memory growth test passed");
-          } else {
-            System.out.println("Memory growth test FAILED");
-          }
-        };
-      Thread memory_thread = new Thread(runnable);
-      memory_thread.start();
 
       for(int i = 0; i < num_iterations; i++){
         try (PointerScope scope = new PointerScope()) {
