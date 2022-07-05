@@ -227,15 +227,15 @@ fi
 
 docker pull $UBUNTU_IMAGE
 docker run --gpus device=$CUDA_DEVICE --rm --entrypoint $SRCDIR/$OPENVINOSCRIPT \
-       --mount type=bind,source=$HOST_SRCDIR,target=$SRCDIR \
-       --mount type=bind,source=$HOST_DESTDIR,target=$DESTDIR \
-       --mount type=bind,source=$HOST_VARDESTDIR,target=$VARDESTDIR \
-       --mount type=bind,source=$HOST_IDENTITYDESTDIR,target=$IDENTITYDESTDIR \
-       --mount type=bind,source=$HOST_RESHAPEDESTDIR,target=$RESHAPEDESTDIR \
-       --mount type=bind,source=$HOST_SEQDESTDIR,target=$SEQDESTDIR \
-       --mount type=bind,source=$HOST_DYNASEQDESTDIR,target=$DYNASEQDESTDIR \
-       --mount type=bind,source=$HOST_VARSEQDESTDIR,target=$VARSEQDESTDIR \
-       --mount type=bind,source=$HOST_RAGGEDDESTDIR,target=$RAGGEDDESTDIR \
+       -v $HOST_SRCDIR:$SRCDIR \
+       -v $HOST_DESTDIR:$DESTDIR \
+       -v $HOST_VARDESTDIR:$VARDESTDIR \
+       -v $HOST_IDENTITYDESTDIR:$IDENTITYDESTDIR \
+       -v $HOST_RESHAPEDESTDIR:$RESHAPEDESTDIR \
+       -v $HOST_SEQDESTDIR:$SEQDESTDIR \
+       -v $HOST_DYNASEQDESTDIR:$DYNASEQDESTDIR \
+       -v $HOST_VARSEQDESTDIR:$VARSEQDESTDIR \
+       -v $HOST_RAGGEDDESTDIR:$RAGGEDDESTDIR \
        $UBUNTU_IMAGE
 if [ $? -ne 0 ]; then
     echo -e "Failed"
@@ -293,20 +293,20 @@ fi
 
 docker pull $UBUNTU_IMAGE
 docker run --gpus device=$CUDA_DEVICE --rm --entrypoint $SRCDIR/$ONNXSCRIPT \
-       --mount type=bind,source=$HOST_SRCDIR,target=$SRCDIR \
-       --mount type=bind,source=$HOST_DESTDIR,target=$DESTDIR \
-       --mount type=bind,source=$HOST_VARDESTDIR,target=$VARDESTDIR \
-       --mount type=bind,source=$HOST_IDENTITYDESTDIR,target=$IDENTITYDESTDIR \
-       --mount type=bind,source=$HOST_RESHAPEDESTDIR,target=$RESHAPEDESTDIR \
-       --mount type=bind,source=$HOST_SEQDESTDIR,target=$SEQDESTDIR \
-       --mount type=bind,source=$HOST_DYNASEQDESTDIR,target=$DYNASEQDESTDIR \
-       --mount type=bind,source=$HOST_DYNASEQIMPLICITDESTDIR,target=$DYNASEQIMPLICITDESTDIR \
-       --mount type=bind,source=$HOST_VARSEQDESTDIR,target=$VARSEQDESTDIR \
-       --mount type=bind,source=$HOST_RAGGEDDESTDIR,target=$RAGGEDDESTDIR \
-       --mount type=bind,source=$HOST_VARIMPLICITSEQDESTDIR,target=$VARIMPLICITSEQDESTDIR \
-       --mount type=bind,source=$HOST_IMPLICITSEQDESTDIR,target=$IMPLICITSEQDESTDIR \
-       --mount type=bind,source=$HOST_VARINITIALSTATEIMPLICITSEQDESTDIR,target=$VARINITIALSTATEIMPLICITSEQDESTDIR \
-       --mount type=bind,source=$HOST_INITIALSTATEIMPLICITSEQDESTDIR,target=$INITIALSTATEIMPLICITSEQDESTDIR \
+       -v $HOST_SRCDIR:$SRCDIR \
+       -v $HOST_DESTDIR:$DESTDIR \
+       -v $HOST_VARDESTDIR:$VARDESTDIR \
+       -v $HOST_IDENTITYDESTDIR:$IDENTITYDESTDIR \
+       -v $HOST_RESHAPEDESTDIR:$RESHAPEDESTDIR \
+       -v $HOST_SEQDESTDIR:$SEQDESTDIR \
+       -v $HOST_DYNASEQDESTDIR:$DYNASEQDESTDIR \
+       -v $HOST_DYNASEQIMPLICITDESTDIR:$DYNASEQIMPLICITDESTDIR \
+       -v $HOST_VARSEQDESTDIR:$VARSEQDESTDIR \
+       -v $HOST_RAGGEDDESTDIR:$RAGGEDDESTDIR \
+       -v $HOST_VARIMPLICITSEQDESTDIR:$VARIMPLICITSEQDESTDIR \
+       -v $HOST_IMPLICITSEQDESTDIR:$IMPLICITSEQDESTDIR \
+       -v $HOST_VARINITIALSTATEIMPLICITSEQDESTDIR:$VARINITIALSTATEIMPLICITSEQDESTDIR \
+       -v $HOST_INITIALSTATEIMPLICITSEQDESTDIR:$INITIALSTATEIMPLICITSEQDESTDIR \
        $UBUNTU_IMAGE
 if [ $? -ne 0 ]; then
     echo -e "Failed"
@@ -343,15 +343,15 @@ fi
 
 docker pull $PYTORCH_IMAGE
 docker run --gpus device=$CUDA_DEVICE --rm --entrypoint $SRCDIR/$TORCHSCRIPT \
-       --mount type=bind,source=$HOST_SRCDIR,target=$SRCDIR \
-       --mount type=bind,source=$HOST_DESTDIR,target=$DESTDIR \
-       --mount type=bind,source=$HOST_VARDESTDIR,target=$VARDESTDIR \
-       --mount type=bind,source=$HOST_IDENTITYDESTDIR,target=$IDENTITYDESTDIR \
-       --mount type=bind,source=$HOST_RESHAPEDESTDIR,target=$RESHAPEDESTDIR \
-       --mount type=bind,source=$HOST_SEQDESTDIR,target=$SEQDESTDIR \
-       --mount type=bind,source=$HOST_DYNASEQDESTDIR,target=$DYNASEQDESTDIR \
-       --mount type=bind,source=$HOST_VARSEQDESTDIR,target=$VARSEQDESTDIR \
-       --mount type=bind,source=$HOST_TORCHTRTDESTDIR,target=$TORCHTRTDESTDIR \
+       -v $HOST_SRCDIR:$SRCDIR \
+       -v $HOST_DESTDIR:$DESTDIR \
+       -v $HOST_VARDESTDIR:$VARDESTDIR \
+       -v $HOST_IDENTITYDESTDIR:$IDENTITYDESTDIR \
+       -v $HOST_RESHAPEDESTDIR:$RESHAPEDESTDIR \
+       -v $HOST_SEQDESTDIR:$SEQDESTDIR \
+       -v $HOST_DYNASEQDESTDIR:$DYNASEQDESTDIR \
+       -v $HOST_VARSEQDESTDIR:$VARSEQDESTDIR \
+       -v $HOST_TORCHTRTDESTDIR:$TORCHTRTDESTDIR \
        $PYTORCH_IMAGE
 if [ $? -ne 0 ]; then
     echo -e "Failed"
@@ -399,18 +399,18 @@ fi
 
 docker pull $TENSORFLOW_IMAGE
 docker run --gpus device=$CUDA_DEVICE --rm --entrypoint $SRCDIR/$TFSCRIPT \
-       --mount type=bind,source=$HOST_SRCDIR,target=$SRCDIR \
-       --mount type=bind,source=$HOST_DESTDIR,target=$DESTDIR \
-       --mount type=bind,source=$HOST_VARDESTDIR,target=$VARDESTDIR \
-       --mount type=bind,source=$HOST_IDENTITYDESTDIR,target=$IDENTITYDESTDIR \
-       --mount type=bind,source=$HOST_SIGDEFDESTDIR,target=$SIGDEFDESTDIR \
-       --mount type=bind,source=$HOST_RESHAPEDESTDIR,target=$RESHAPEDESTDIR \
-       --mount type=bind,source=$HOST_SEQDESTDIR,target=$SEQDESTDIR \
-       --mount type=bind,source=$HOST_DYNASEQDESTDIR,target=$DYNASEQDESTDIR \
-       --mount type=bind,source=$HOST_VARSEQDESTDIR,target=$VARSEQDESTDIR \
-       --mount type=bind,source=$HOST_NOSHAPEDESTDIR,target=$NOSHAPEDESTDIR \
-       --mount type=bind,source=$HOST_ENSEMBLEDESTDIR,target=$ENSEMBLEDESTDIR \
-       --mount type=bind,source=$HOST_RAGGEDDESTDIR,target=$RAGGEDDESTDIR \
+       -v $HOST_SRCDIR:$SRCDIR \
+       -v $HOST_DESTDIR:$DESTDIR \
+       -v $HOST_VARDESTDIR:$VARDESTDIR \
+       -v $HOST_IDENTITYDESTDIR:$IDENTITYDESTDIR \
+       -v $HOST_SIGDEFDESTDIR:$SIGDEFDESTDIR \
+       -v $HOST_RESHAPEDESTDIR:$RESHAPEDESTDIR \
+       -v $HOST_SEQDESTDIR:$SEQDESTDIR \
+       -v $HOST_DYNASEQDESTDIR:$DYNASEQDESTDIR \
+       -v $HOST_VARSEQDESTDIR:$VARSEQDESTDIR \
+       -v $HOST_NOSHAPEDESTDIR:$NOSHAPEDESTDIR \
+       -v $HOST_ENSEMBLEDESTDIR:$ENSEMBLEDESTDIR \
+       -v $HOST_RAGGEDDESTDIR:$RAGGEDDESTDIR \
        $TENSORFLOW_IMAGE
 if [ $? -ne 0 ]; then
     echo -e "Failed"
@@ -468,22 +468,22 @@ fi
 
 docker pull $TENSORRT_IMAGE
 docker run --gpus device=$CUDA_DEVICE --rm --entrypoint $SRCDIR/$TRTSCRIPT \
-       --mount type=bind,source=$HOST_SRCDIR,target=$SRCDIR \
-       --mount type=bind,source=$HOST_DESTDIR,target=$DESTDIR \
-       --mount type=bind,source=$HOST_VARDESTDIR,target=$VARDESTDIR \
-       --mount type=bind,source=$HOST_IDENTITYDESTDIR,target=$IDENTITYDESTDIR \
-       --mount type=bind,source=$HOST_IDENTITYBIGDESTDIR,target=$IDENTITYBIGDESTDIR \
-       --mount type=bind,source=$HOST_SHAPEDESTDIR,target=$SHAPEDESTDIR \
-       --mount type=bind,source=$HOST_RESHAPEDESTDIR,target=$RESHAPEDESTDIR \
-       --mount type=bind,source=$HOST_SEQDESTDIR,target=$SEQDESTDIR \
-       --mount type=bind,source=$HOST_DYNASEQDESTDIR,target=$DYNASEQDESTDIR \
-       --mount type=bind,source=$HOST_VARSEQDESTDIR,target=$VARSEQDESTDIR \
-       --mount type=bind,source=$HOST_PLGDESTDIR,target=$PLGDESTDIR \
-       --mount type=bind,source=$HOST_RAGGEDDESTDIR,target=$RAGGEDDESTDIR \
-       --mount type=bind,source=$HOST_FORMATDESTDIR,target=$FORMATDESTDIR \
-       --mount type=bind,source=$HOST_VARIMPLICITSEQDESTDIR,target=$VARIMPLICITSEQDESTDIR \
-       --mount type=bind,source=$HOST_DYNASEQIMPLICITDESTDIR,target=$DYNASEQIMPLICITDESTDIR \
-       --mount type=bind,source=$HOST_IMPLICITSEQDESTDIR,target=$IMPLICITSEQDESTDIR \
+       -v $HOST_SRCDIR:$SRCDIR \
+       -v $HOST_DESTDIR:$DESTDIR \
+       -v $HOST_VARDESTDIR:$VARDESTDIR \
+       -v $HOST_IDENTITYDESTDIR:$IDENTITYDESTDIR \
+       -v $HOST_IDENTITYBIGDESTDIR:$IDENTITYBIGDESTDIR \
+       -v $HOST_SHAPEDESTDIR:$SHAPEDESTDIR \
+       -v $HOST_RESHAPEDESTDIR:$RESHAPEDESTDIR \
+       -v $HOST_SEQDESTDIR:$SEQDESTDIR \
+       -v $HOST_DYNASEQDESTDIR:$DYNASEQDESTDIR \
+       -v $HOST_VARSEQDESTDIR:$VARSEQDESTDIR \
+       -v $HOST_PLGDESTDIR:$PLGDESTDIR \
+       -v $HOST_RAGGEDDESTDIR:$RAGGEDDESTDIR \
+       -v $HOST_FORMATDESTDIR:$FORMATDESTDIR \
+       -v $HOST_VARIMPLICITSEQDESTDIR:$VARIMPLICITSEQDESTDIR \
+       -v $HOST_DYNASEQIMPLICITDESTDIR:$DYNASEQIMPLICITDESTDIR \
+       -v $HOST_IMPLICITSEQDESTDIR:$IMPLICITSEQDESTDIR \
        $TENSORRT_IMAGE
 if [ $? -ne 0 ]; then
     echo -e "Failed"
