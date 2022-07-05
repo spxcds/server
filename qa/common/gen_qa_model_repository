@@ -226,7 +226,7 @@ if [ $? -ne 0 ]; then
 fi
 
 docker pull $UBUNTU_IMAGE
-docker run --gpus device=$CUDA_DEVICE --rm -it --entrypoint $SRCDIR/$OPENVINOSCRIPT \
+docker run --gpus device=$CUDA_DEVICE --rm --entrypoint $SRCDIR/$OPENVINOSCRIPT \
        --mount type=bind,source=$HOST_SRCDIR,target=$SRCDIR \
        --mount type=bind,source=$HOST_DESTDIR,target=$DESTDIR \
        --mount type=bind,source=$HOST_VARDESTDIR,target=$VARDESTDIR \
