@@ -161,6 +161,7 @@ ARG DCGM_VERSION
 ARG TRITON_CORE_REPO_TAG
 ARG TARGETPLATFORM
 ARG TRITON_ENABLE_GPU
+ARG CMAKE_UBUNTU_VERSION
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -204,10 +205,14 @@ COPY qa/images/mug.jpg images/mug.jpg
 # Install the dependencies needed to run the client examples. These
 # are not needed for building but including them allows this image to
 # be used to run the client examples.
-RUN pip3 install --upgrade numpy pillow attrdict && \
-    find install/python/ -maxdepth 1 -type f -name \
-         "tritonclient-*linux*.whl" | xargs printf -- '%s[all]' | \
-    xargs pip3 install --upgrade
+# Skip Ubuntu 18.04 because one dependency (protobuf >= 3.20) requires
+# Python >= 3.7 which the OS default doesn't satisfy
+RUN if [ "$CMAKE_UBUNTU_VERSION" != "18.04" ]; then \
+      pip3 install --upgrade numpy pillow attrdict && \
+      find install/python/ -maxdepth 1 -type f -name \
+          "tritonclient-*linux*.whl" | xargs printf -- '%s[all]' | \
+      xargs pip3 install --upgrade \
+    fi
 
 # Install DCGM
 RUN if [ "$TRITON_ENABLE_GPU" = "ON" ]; then \
