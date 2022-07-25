@@ -1385,7 +1385,7 @@ CommonHandler::SetUpAllRequests()
             // Okay to pass nullptr because we know the update will be applied
             // to the global object.
             FAIL_IF_ERR(
-                TRITONSERVER_ServerOptionsSetLogOutFile(
+                TRITONSERVER_ServerOptionsSetLogFile(
                     nullptr, log_file_path.c_str()),
                 "setting log out file");
           }
@@ -1526,7 +1526,7 @@ CommonHandler::SetUpAllRequests()
       }
       GOTO_IF_ERR(err, earlyexit);
     }
-    (*response->mutable_settings())["log_file"].set_string_param(LOG_OUT_FILE);
+    (*response->mutable_settings())["log_file"].set_string_param(LOG_FILE);
     (*response->mutable_settings())["log_info"].set_bool_param(LOG_INFO_IS_ON);
     (*response->mutable_settings())["log_warnings"].set_bool_param(
         LOG_WARNING_IS_ON);
