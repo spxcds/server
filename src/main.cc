@@ -72,6 +72,10 @@
 #include "grpc_server.h"
 #endif  // TRITON_ENABLE_GRPC
 
+#ifdef TRITON_ENABLE_BRPC
+#include "brpc_server.h"
+#endif  // DEBUG
+
 #ifdef TRITON_ENABLE_GPU
 static_assert(
     TRITON_MIN_COMPUTE_CAPABILITY >= 1.0,
@@ -128,6 +132,13 @@ grpc_compression_level grpc_response_compression_level_ =
 // KeepAlive defaults: https://grpc.github.io/grpc/cpp/md_doc_keepalive.html
 triton::server::KeepAliveOptions grpc_keepalive_options_;
 #endif  // TRITON_ENABLE_GRPC
+
+#ifdef TRITON_ENABLE_BRPC
+std::unique_ptr<triton::server::BRPCServer> brpc_service_;
+bool allow_brpc_ = true;
+int32_t brpc_port_ = 8003;
+std::string brpc_address_ = "0.0.0.0";
+#endif  // TRITON_ENABLE_BRPC
 
 #ifdef TRITON_ENABLE_METRICS
 std::unique_ptr<triton::server::HTTPServer> metrics_service_;
@@ -645,6 +656,12 @@ CheckPortCollision()
     ports.emplace_back("GRPC", grpc_address_, grpc_port_, false, -1, -1);
   }
 #endif  // TRITON_ENABLE_GRPC
+#ifdef TRITON_ENABLE_BRPC
+  if (allow_brpc_) {
+    ports.emplace_back("BRPC", brpc_address_, brpc_port_, false, -1, -1);
+  }
+#endif  // TRITON_ENABLE_BRPC
+
 #ifdef TRITON_ENABLE_METRICS
   if (allow_metrics_) {
     ports.emplace_back("metrics", http_address_, metrics_port_, false, -1, -1);
@@ -725,6 +742,29 @@ StartGrpcService(
   return err;
 }
 #endif  // TRITON_ENABLE_GRPC
+
+#ifdef TRITON_ENABLE_BRPC
+TRITONSERVER_Error*
+StartBrpcService(
+    std::unique_ptr<triton::server::BRPCServer>* service,
+    const std::shared_ptr<TRITONSERVER_Server>& server,
+    triton::server::TraceManager* trace_manager,
+    const std::shared_ptr<triton::server::SharedMemoryManager>& shm_manager)
+{
+  TRITONSERVER_Error* err = triton::server::BRPCServer::Create(
+      server, trace_manager, shm_manager, brpc_port_, service);
+  if (err == nullptr) {
+    err = (*service)->Start();
+  }
+
+  if (err != nullptr) {
+    service->reset();
+  }
+
+  return err;
+}
+#endif  // TRITON_ENABLE_BRPC
+
 
 #ifdef TRITON_ENABLE_HTTP
 TRITONSERVER_Error*
@@ -842,6 +882,18 @@ StartEndpoints(
   }
 #endif  // TRITON_ENABLE_GRPC
 
+#ifdef TRITON_ENABLE_BRPC
+  // Enable GRPC endpoints if requested...
+  if (allow_brpc_) {
+    TRITONSERVER_Error* err =
+        StartBrpcService(&brpc_service_, server, trace_manager, shm_manager);
+    if (err != nullptr) {
+      LOG_TRITONSERVER_ERROR(err, "failed to start BRPC service");
+      return false;
+    }
+  }
+#endif  // TRITON_ENABLE_BRPC
+
 #ifdef TRITON_ENABLE_HTTP
   // Enable HTTP endpoints if requested...
   if (allow_http_) {
@@ -921,6 +973,19 @@ StopEndpoints()
     grpc_service_.reset();
   }
 #endif  // TRITON_ENABLE_GRPC
+
+#ifdef TRITON_ENABLE_BRPC
+  if (brpc_service_) {
+    TRITONSERVER_Error* err = brpc_service_->Stop();
+    if (err != nullptr) {
+      LOG_TRITONSERVER_ERROR(err, "failed to stop BRPC service");
+      ret = false;
+    }
+
+    brpc_service_.reset();
+  }
+#endif  // TRITON_ENABLE_BRPC
+
 
 #ifdef TRITON_ENABLE_METRICS
   if (metrics_service_) {

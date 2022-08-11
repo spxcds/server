@@ -37,22 +37,29 @@ include(GNUInstallDirs)
 # override the tag. The backend repo is needed for the tests.
 #
 include(FetchContent)
+find_package(PkgConfig REQUIRED)
 
 FetchContent_Declare(
   repo-common
-  GIT_REPOSITORY https://github.com/triton-inference-server/common.git
-  GIT_TAG ${TRITON_COMMON_REPO_TAG}
+  # GIT_REPOSITORY https://github.com/triton-inference-server/common.git
+  # GIT_TAG ${TRITON_COMMON_REPO_TAG}
+  SOURCE_DIR "/root/workspace/triton-inference-server/common"
 )
 FetchContent_Declare(
   repo-core
-  GIT_REPOSITORY https://github.com/triton-inference-server/core.git
-  GIT_TAG ${TRITON_CORE_REPO_TAG}
+  # GIT_REPOSITORY https://github.com/triton-inference-server/core.git
+  # GIT_TAG ${TRITON_CORE_REPO_TAG}
+  SOURCE_DIR "/root/workspace/triton-inference-server/core"
 )
 FetchContent_Declare(
   repo-backend
-  GIT_REPOSITORY https://github.com/triton-inference-server/backend.git
-  GIT_TAG ${TRITON_BACKEND_REPO_TAG}
+  # GIT_REPOSITORY https://github.com/triton-inference-server/backend.git
+  # GIT_TAG ${TRITON_BACKEND_REPO_TAG}
+  SOURCE_DIR "/root/workspace/triton-inference-server/backend"
 )
+
+find_package(Boost REQUIRED)
+set(TRITON_COMMON_ENABLE_PROTOBUF ON)
 
 if(TRITON_ENABLE_GRPC)
   set(TRITON_COMMON_ENABLE_PROTOBUF ON)
@@ -67,6 +74,8 @@ if(${TRITON_ENABLE_GPU})
   find_package(CUDAToolkit REQUIRED)
   message(STATUS "Using CUDA ${CUDA_VERSION}")
 endif() # TRITON_ENABLE_GPU
+
+message(STATUS "leveldb_DIR:"${leveldb_DIR})
 
 # GRPC
 #
@@ -181,6 +190,7 @@ if(${TRITON_ENABLE_HTTP} OR ${TRITON_ENABLE_METRICS} OR
   target_include_directories(
     main
     PRIVATE
+      ${Boost_INCLUDE_DIRS}
       ${LIBEVENT_INCLUDE_DIRS}
   )
 endif()
@@ -197,6 +207,13 @@ if(${TRITON_ENABLE_GRPC})
     PRIVATE TRITON_ENABLE_GRPC=1
   )
 endif() # TRITON_ENABLE_GRPC
+
+if (${TRITON_ENABLE_BRPC})
+  target_compile_definitions(
+    main
+    PRIVATE TRITON_ENABLE_BRPC=1
+  )
+endif()
 
 if(${TRITON_ENABLE_HTTP})
   target_compile_definitions(
@@ -276,6 +293,69 @@ else()
     DESTINATION bin
     RENAME tritonserver.exe
   )
+endif()
+
+# brpc endpoint
+if (${TRITON_ENABLE_BRPC})
+  pkg_search_module(bRPC REQUIRED IMPORTED_TARGET brpc)
+  find_package(leveldb CONFIG REQUIRED)
+  find_package(gflags CONFIG REQUIRED)
+  find_package(Protobuf CONFIG REQUIRED)
+  find_package(OpenSSL)
+  message(STATUS "${OPENSSL_CRYPTO_LIBRARY}")
+  message(STATUS "Using bRPC ${bRPC_VERSION}")
+  message(STATUS "Using leveldb ${leveldb_VERSION}")
+  message(STATUS "Using Protobuf ${Protobuf_VERSION}")
+
+  add_library(
+    brpc-endpoint-library EXCLUDE_FROM_ALL
+    brpc_server.cc
+    brpc_server.h
+  )
+
+  target_compile_features(brpc-endpoint-library PRIVATE cxx_std_11)
+  target_compile_options(
+      brpc-endpoint-library
+      PRIVATE
+        -Wall -Wextra -Wno-unused-parameter -Wno-deprecated-declarations -Werror
+    )
+
+  set_target_properties(
+    brpc-endpoint-library
+    PROPERTIES
+      POSITION_INDEPENDENT_CODE ON
+  )
+
+  target_link_libraries(
+    brpc-endpoint-library
+    PUBLIC
+      proto-library           # from repo-common
+      PkgConfig::bRPC
+      leveldb::leveldb
+      gflags
+      protobuf::libprotobuf
+      OpenSSL::Crypto
+      OpenSSL::SSL
+  )
+
+  target_compile_definitions(
+    brpc-endpoint-library
+    PRIVATE TRITON_ENABLE_BRPC=1
+  )
+
+  if(${TRITON_ENABLE_STATS})
+    target_compile_definitions(
+      brpc-endpoint-library
+      PRIVATE TRITON_ENABLE_STATS=1
+    )
+  endif() # TRITON_ENABLE_STATS
+
+  target_link_libraries(
+    main
+    PRIVATE
+      brpc-endpoint-library
+  )
+
 endif()
 
 # grpc endpoint
@@ -831,6 +911,6 @@ if (NOT WIN32)
 endif() # NOT WIN32
 
 # Currently unit tests do not build for windows...
-if (NOT WIN32)
-  add_subdirectory(test test)
-endif() # NOT WIN32
+# if (NOT WIN32)
+#   add_subdirectory(test test)
+# endif() # NOT WIN32
